@@ -1,3 +1,16 @@
+// Inside the iPhone app only: lay the page out at the same wide size Safari does (then it is scaled to fit the screen),
+// so the app looks and works exactly like the web app.
+if (typeof window !== 'undefined' && window.Capacitor) {
+  const VP = 'width=1704, user-scalable=no, viewport-fit=cover';
+  const fixViewport = () => {
+    let any = false;
+    document.querySelectorAll('meta[name="viewport"]').forEach((m) => { any = true; if (m.getAttribute('content') !== VP) m.setAttribute('content', VP); });
+    if (!any && document.head) { const m = document.createElement('meta'); m.name = 'viewport'; m.content = VP; document.head.appendChild(m); }
+  };
+  fixViewport();
+  try { new MutationObserver(fixViewport).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['content'] }); } catch (e) {}
+  document.addEventListener('DOMContentLoaded', fixViewport);
+}
 // The iPhone app's web view has no navigator.mediaDevices, which stopped the app starting. Give it a harmless stand-in.
 if (typeof navigator !== 'undefined' && !navigator.mediaDevices) {
   try {
@@ -35,8 +48,7 @@ if (typeof navigator !== 'undefined' && !navigator.mediaDevices) {
     const compute = () => {
       if (sizes) return sizes;
       const H = window.innerHeight;
-      const smallScreen = !!window.Capacitor && Math.min((window.screen && window.screen.width) || 9999, (window.screen && window.screen.height) || 9999) < 600;   // only inside the iPhone app, so Safari behaves exactly as before
-      if ((!H || H >= 700) && !smallScreen) return (sizes = { track: 280, handle: 40, phone: false });
+      if (!H || H >= 700) return (sizes = { track: 280, handle: 40, phone: false });
       const track = Math.max(30, Math.min(280, windowHeight() - 241));
       return (sizes = { track, handle: track < 120 ? 26 : 40, phone: true });
     };
