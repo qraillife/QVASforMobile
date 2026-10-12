@@ -35,7 +35,7 @@ if (typeof navigator !== 'undefined' && !navigator.mediaDevices) {
     const compute = () => {
       if (sizes) return sizes;
       const H = window.innerHeight;
-      const smallScreen = Math.min((window.screen && window.screen.width) || 9999, (window.screen && window.screen.height) || 9999) < 600;   // iPhone, even when innerHeight is not ready yet
+      const smallScreen = !!window.Capacitor && Math.min((window.screen && window.screen.width) || 9999, (window.screen && window.screen.height) || 9999) < 600;   // only inside the iPhone app, so Safari behaves exactly as before
       if ((!H || H >= 700) && !smallScreen) return (sizes = { track: 280, handle: 40, phone: false });
       const track = Math.max(30, Math.min(280, windowHeight() - 241));
       return (sizes = { track, handle: track < 120 ? 26 : 40, phone: true });
