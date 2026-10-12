@@ -1,3 +1,13 @@
+// The iPhone app's web view has no navigator.mediaDevices, which stopped the app starting. Give it a harmless stand-in.
+if (typeof navigator !== 'undefined' && !navigator.mediaDevices) {
+  try {
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
+      addEventListener() {}, removeEventListener() {},
+      enumerateDevices() { return Promise.resolve([]); },
+      getUserMedia() { return Promise.reject(new Error('Not available')); }
+    } });
+  } catch (e) {}
+}
 /*
  * QVAS web/PWA shim
  * Replaces what server.js (Node) and main.js (Electron) provided, so the UI runs
@@ -25,7 +35,8 @@
     const compute = () => {
       if (sizes) return sizes;
       const H = window.innerHeight;
-      if (!H || H >= 700) return (sizes = { track: 280, handle: 40, phone: false });
+      const smallScreen = Math.min((window.screen && window.screen.width) || 9999, (window.screen && window.screen.height) || 9999) < 600;   // iPhone, even when innerHeight is not ready yet
+      if ((!H || H >= 700) && !smallScreen) return (sizes = { track: 280, handle: 40, phone: false });
       const track = Math.max(30, Math.min(280, windowHeight() - 241));
       return (sizes = { track, handle: track < 120 ? 26 : 40, phone: true });
     };
@@ -556,11 +567,41 @@
     offline.onChange(syncDl); syncDl(offline.st);
     bar.appendChild(dl);
     gps.style.flexBasis = 'auto'; gps.style.padding = '0 8px'; gps.style.fontSize = '11px';
+    // Background mode: while GPS Mode is On, a silent looping sound keeps iPhone from freezing the page when the screen
+    // locks or another app is opened, so GPS and announcements keep going. (Needs one tap on the screen to start.)
+    const keepAlive = (() => {
+      let a = null, want = false, armed = false;
+      const wavUrl = () => {
+        const n = 8000, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+        const w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+        w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+        v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 16000, true);
+        v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+        for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, i % 2 ? 1 : -1, true);   // inaudible
+        return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+      };
+      const play = () => {
+        if (!want) return;
+        if (!a) { a = new Audio(wavUrl()); a.loop = true; a.setAttribute('playsinline', ''); a.volume = 1; }
+        a.play().then(() => {
+          if ('mediaSession' in navigator) {
+            try { navigator.mediaSession.metadata = new MediaMetadata({ title: 'QVAS running', artist: 'LARPTransit' }); navigator.mediaSession.playbackState = 'playing'; } catch (e) {}
+          }
+        }).catch(() => {
+          if (armed) return; armed = true;                    // iPhone needs a tap before sound may start
+          const go = () => { armed = false; play(); };
+          document.addEventListener('pointerdown', go, { once: true, capture: true });
+        });
+      };
+      document.addEventListener('visibilitychange', () => { if (want && a && a.paused) play(); });
+      return { set(on) { if (on === want) { if (on && a && a.paused) play(); return; } want = on; if (on) play(); else if (a) { a.pause(); } } };
+    })();
     function syncGps() {
       const on = appGpsMode();
       gps.textContent = on ? 'GPS On' : 'GPS Off';
       gps.style.background = on ? '#1d6b3a' : '';
       bar.classList.toggle('gps-on', on);
+      keepAlive.set(on);
       if (on) startGPS(); else if (gpsWatchId !== null) stopGPS();
     }
     syncGps(); setInterval(syncGps, 800);
