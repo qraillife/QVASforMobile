@@ -11,6 +11,64 @@ if (typeof window !== 'undefined' && window.Capacitor) {
   try { new MutationObserver(fixViewport).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['content'] }); } catch (e) {}
   document.addEventListener('DOMContentLoaded', fixViewport);
 }
+// Inside the iPhone app only: use the phone's real background location (the browser version stops when the screen locks or you
+// leave the app). It plugs into the same place the rest of the app already reads GPS from. If the app was built without the
+// plugin, it quietly falls back to the normal browser GPS.
+(function () {
+  try {
+    const cap = window.Capacitor;
+    if (!cap || !(cap.isNativePlatform && cap.isNativePlatform()) || !cap.registerPlugin) return;
+    const BG = cap.registerPlugin('BackgroundGeolocation');
+    const orig = navigator.geolocation;
+    const watchers = new Map();
+    let nextId = 1;
+    const geo = {
+      watchPosition(success, error, opts) {
+        const id = nextId++;
+        const rec = { native: null, removed: false, fallback: null };
+        watchers.set(id, rec);
+        const useFallback = () => { if (!rec.removed && orig) rec.fallback = orig.watchPosition(success, error, opts); };
+        BG.addWatcher({
+          backgroundTitle: 'QVAS',
+          backgroundMessage: 'QVAS is using your location for announcements.',
+          requestPermissions: true, stale: false, distanceFilter: 0
+        }, (loc, err) => {
+          if (err) { if (error) error({ code: err.code === 'NOT_AUTHORIZED' ? 1 : 2, message: err.message || 'Location error' }); return; }
+          if (!loc) return;
+          success({
+            coords: {
+              latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy, altitude: loc.altitude,
+              altitudeAccuracy: null, heading: (loc.bearing == null ? null : loc.bearing),
+              speed: (loc.speed == null || loc.speed < 0) ? null : loc.speed
+            },
+            timestamp: loc.time || Date.now()
+          });
+        }).then((nid) => {
+          if (rec.removed) { BG.removeWatcher({ id: nid }).catch(() => {}); } else { rec.native = nid; }
+        }).catch((e) => {
+          const msg = String((e && (e.message || e.code)) || e);
+          if (/unimplemented|not implemented|not available/i.test(msg)) useFallback();
+          else if (error) error({ code: 2, message: msg });
+        });
+        return id;
+      },
+      clearWatch(id) {
+        const rec = watchers.get(id);
+        if (!rec) return;
+        rec.removed = true; watchers.delete(id);
+        if (rec.native) BG.removeWatcher({ id: rec.native }).catch(() => {});
+        if (rec.fallback !== null && orig) orig.clearWatch(rec.fallback);
+      },
+      getCurrentPosition(success, error, opts) {
+        let done = false;
+        const id = geo.watchPosition((p) => { if (done) return; done = true; geo.clearWatch(id); success(p); },
+                                     (e) => { if (done) return; done = true; geo.clearWatch(id); if (error) error(e); }, opts);
+      }
+    };
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: geo });
+  } catch (e) { /* keep the normal browser GPS */ }
+})();
+
 // The iPhone app's web view has no navigator.mediaDevices, which stopped the app starting. Give it a harmless stand-in.
 if (typeof navigator !== 'undefined' && !navigator.mediaDevices) {
   try {
