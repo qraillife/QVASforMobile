@@ -67,10 +67,6 @@ copyDir(path.join(srcRoot, 'src'), out, (p, e) => e.isDirectory() || !skip.has(e
                 break;`);
     fs.writeFileSync(appJs, code);
   }
-  // Keep station and manual selection from jumping the page to the bottom on iPhone.
-  const autoScroll = /if \(el\.classList\.contains\('visible'\)\) \{\s*el\.scrollIntoView\(\{ block: 'nearest' \}\);\s*\}/g;
-  const corrected = code.replace(autoScroll, '// Keep the existing route-list scroll position.');
-  if (corrected !== code) fs.writeFileSync(appJs, corrected);
 }
 
 const patterns = [path.join(srcRoot, 'gtfs-patterns.json'), path.join(srcRoot, 'src', '2gtfs-patterns.json')].find(fs.existsSync);

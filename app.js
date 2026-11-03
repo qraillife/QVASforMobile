@@ -4795,8 +4795,9 @@ document.addEventListener("DOMContentLoaded", function () {
     items.forEach((el, i) => {
       if (i === index) {
         el.classList.add('selected');
-        // Do not auto-scroll the route list when highlighting a station.
-        // The visible page and user's own scroll position are preserved.
+        if (el.classList.contains('visible')) {
+          el.scrollIntoView({ block: 'nearest' });
+        }
       } else {
         el.classList.remove('selected');
       }
@@ -5009,8 +5010,9 @@ document.addEventListener("DOMContentLoaded", function () {
     items.forEach((el, i) => {
       if (i === index) {
         el.classList.add('selected');
-        // Do not auto-scroll the route list when highlighting a station.
-        // The visible page and user's own scroll position are preserved.
+        if (el.classList.contains('visible')) {
+          el.scrollIntoView({ block: 'nearest' });
+        }
       } else {
         el.classList.remove('selected');
       }
