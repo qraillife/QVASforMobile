@@ -6,7 +6,10 @@ const INDEX_KEY = '__shell-index__';
 const NETWORK_FIRST = new Set(['sw.js', 'version.json', 'audio-hashes.json', '', 'index.html', 'app.js', 'qvas-web-shim.js', 'style.css', 'file-index.js']);   // always take the newest copy when online
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(precache().then(() => self.skipWaiting()))self.addEventListener('activate', (event) => {
+  event.waitUntil(precache().then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     // Do not touch qvas-audio-v1: downloaded QR announcements remain available.
     const names = await caches.keys();
@@ -63,9 +66,6 @@ async function precache() {
   };
   await Promise.all([worker(), worker(), worker(), worker()]);
   await cache.put(INDEX_KEY, new Response(JSON.stringify(next)));
-}
-
-);
 }
 
 self.addEventListener('fetch', (event) => {
