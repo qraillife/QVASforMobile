@@ -126,7 +126,7 @@ if (missing.length) console.warn(`\n!! SEQ_GTFS is missing: ${missing.join(', ')
 fs.copyFileSync(path.join(__dirname, '..', 'shim', 'qvas-web-shim.js'), path.join(out, 'qvas-web-shim.js'));
 for (const f of fs.readdirSync(path.join(__dirname, 'assets'))) fs.copyFileSync(path.join(__dirname, 'assets', f), path.join(out, f));
 fs.writeFileSync(path.join(out, 'manifest.webmanifest'), JSON.stringify({
-  name: 'VAS HMI-C', short_name: 'VAS', start_url: './', scope: './', display: 'fullscreen', orientation: 'landscape',
+  name: 'QVAS', short_name: 'QVAS', start_url: './', scope: './', display: 'fullscreen', orientation: 'landscape',
   background_color: '#000000', theme_color: '#000000',
   icons: [{ src: 'icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }]
 }, null, 2));
@@ -140,7 +140,8 @@ html = html.replace(/<head>/i, `<head>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="VAS HMI-C">`);
+  <meta name="apple-mobile-web-app-title" content="QVAS">`);
+html = html.replace(/<title>[^<]*<\/title>/i, '<title>QVAS</title>');
 html = html.replace(/<meta name="viewport"[^>]*>/i, '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">');
 fs.writeFileSync(path.join(out, 'index.html'), html);
 
