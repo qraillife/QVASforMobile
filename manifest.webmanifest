@@ -1,6 +1,6 @@
 {
-  "name": "VAS HMI-C",
-  "short_name": "VAS",
+  "name": "QVAS",
+  "short_name": "QVAS",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
