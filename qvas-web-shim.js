@@ -724,7 +724,7 @@ if (typeof navigator !== 'undefined' && !navigator.mediaDevices) {
     if (standalone) { toast('Restarting\u2026'); setTimeout(() => location.reload(), 400); return; }
     const el = document.documentElement;
     if (el.requestFullscreen) { el.requestFullscreen().then(() => toast('Full screen on')).catch(() => toast('Full screen was blocked by the browser.')); return; }
-    toast('For full screen: tap Share, then Add to Home Screen, and open VAS HMI-C from the Home Screen icon.');
+    toast('For full screen: tap Share, then Add to Home Screen, and open QVAS from the Home Screen icon.');
   }, true);
 
   // ---------- offline ----------
