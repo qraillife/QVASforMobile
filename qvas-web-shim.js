@@ -107,7 +107,7 @@ if (typeof navigator !== 'undefined' && !navigator.mediaDevices) {
       if (sizes) return sizes;
       const H = window.innerHeight;
       if (!H || H >= 700) return (sizes = { track: 280, handle: 40, phone: false });
-      const track = Math.max(30, Math.min(280, windowHeight() - 241));
+      const track = Math.max(30, Math.min(280, H - 241));
       return (sizes = { track, handle: track < 120 ? 26 : 40, phone: true });
     };
     Object.defineProperty(window, '__QV_SLIDER', { configurable: true, get: compute });
@@ -814,28 +814,57 @@ if (typeof navigator !== 'undefined' && !navigator.mediaDevices) {
         return r.ok ? await r.json() : null;
       } catch (e) { return null; }
     }
+    async function activeBuild(reg) {
+      const worker = reg && (reg.active || navigator.serviceWorker.controller);
+      if (!worker) return null;
+      return new Promise(resolve => {
+        const channel = new MessageChannel();
+        const timer = setTimeout(() => resolve(null), 3000);
+        channel.port1.onmessage = event => {
+          clearTimeout(timer);
+          resolve(event.data && event.data.buildId);
+        };
+        worker.postMessage({ type: 'QVAS_BUILD' }, [channel.port2]);
+      });
+    }
     async function applyUpdate(btn) {
-      if (btn) { btn.disabled = true; btn.textContent = 'Updating\u2026'; }
-      let usedSW = false;
+      if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
       try {
-        const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
-        if (reg) {
-          await reg.update();                       // downloads only the files that changed, then the new worker takes over
-          const sw = reg.installing || reg.waiting;
-          if (sw && !['activated', 'redundant'].includes(sw.state)) {
-            await new Promise((res) => {
-              sw.addEventListener('statechange', () => { if (['activated', 'redundant'].includes(sw.state)) res(); });
-              setTimeout(res, 180000);
+        const latestBuild = await latest();
+        if (!latestBuild || !latestBuild.buildId) throw new Error('Unable to check the published build.');
+        if (!('serviceWorker' in navigator)) throw new Error('Service workers are not available on this device.');
+        let reg = await navigator.serviceWorker.getRegistration('./');
+        if (!reg) reg = await navigator.serviceWorker.register('sw.js', { scope: './' });
+        await reg.update();
+        const pending = reg.installing || reg.waiting;
+        if (pending) {
+          if (pending.state === 'installed' && reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          await new Promise((resolve, reject) => {
+            if (pending.state === 'activated') return resolve();
+            if (pending.state === 'redundant') return reject(new Error('The new worker could not install. Check your connection.'));
+            const timeout = setTimeout(() => reject(new Error('Update download timed out. Your existing version is unchanged.')), 90000);
+            pending.addEventListener('statechange', () => {
+              if (pending.state === 'installed' && reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+              if (pending.state === 'activated' || pending.state === 'redundant') {
+                clearTimeout(timeout);
+                pending.state === 'activated' ? resolve() : reject(new Error('Worker installation failed.'));
+              }
             });
-          }
-          usedSW = true;
+          });
         }
-      } catch (e) {}
-      if (!usedSW) {
-        const files = ['./', 'index.html', 'app.js', 'style.css', 'qvas-web-shim.js', 'file-index.js', 'version.json'];
-        try { await Promise.all(files.map(f => realFetch(f, { cache: 'reload' }))); } catch (e) {}
+        // The worker must actually contain the version advertised by version.json.
+        // Never reload repeatedly with a stale worker and claim the update succeeded.
+        reg = await navigator.serviceWorker.getRegistration('./');
+        const installedBuild = await activeBuild(reg);
+        if (installedBuild !== String(latestBuild.buildId)) {
+          throw new Error('Published files and service worker have different build IDs. Rebuild the site first.');
+        }
+        window.location.reload();
+      } catch (error) {
+        console.error('QVAS update failed:', error);
+        toast('Update failed: ' + (error && error.message || error));
+        if (btn) { btn.disabled = false; btn.textContent = 'Retry update'; }
       }
-      location.reload();
     }
     function showBanner(v) {
       if (banner || Date.now() < snoozedUntil) return;
