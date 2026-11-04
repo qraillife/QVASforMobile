@@ -4795,8 +4795,7 @@ document.addEventListener("DOMContentLoaded", function () {
     items.forEach((el, i) => {
       if (i === index) {
         el.classList.add('selected');
-        // Do not auto-scroll the route list when highlighting a station.
-        // The visible page and user's own scroll position are preserved.
+        // Keep the existing route-list scroll position.
       } else {
         el.classList.remove('selected');
       }
@@ -5009,8 +5008,7 @@ document.addEventListener("DOMContentLoaded", function () {
     items.forEach((el, i) => {
       if (i === index) {
         el.classList.add('selected');
-        // Do not auto-scroll the route list when highlighting a station.
-        // The visible page and user's own scroll position are preserved.
+        // Keep the existing route-list scroll position.
       } else {
         el.classList.remove('selected');
       }
@@ -7956,6 +7954,15 @@ document.addEventListener("DOMContentLoaded", function () {
       handleEl.style.bottom = position + 'px';
     }
     if (valueEl) valueEl.textContent = value + '%';
+
+    // Grey out the matching Up/Down button when the slider is at its limit
+    [['up', value >= 100], ['down', value <= 0]].forEach(([dir, atLimit]) => {
+      const btn = document.getElementById(`${type}-${dir}-btn`);
+      if (btn) {
+        btn.classList.toggle('footer-btn-grey', atLimit);
+        btn.classList.toggle('footer-btn-green', !atLimit);
+      }
+    });
     
     return value;
   }

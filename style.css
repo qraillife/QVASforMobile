@@ -152,6 +152,9 @@ body {
   margin-top: -20px;
   white-space: nowrap;
 }
+#header-route {
+  margin-left: -15px;
+}
 .header-title {
   display: none;
 }
@@ -173,7 +176,7 @@ body {
   font-weight: bold;
 }
 #route-label {
-  font-size: 1.05em;
+  font-size: 1.228em;
   margin-right: 10ch;
 }
 #route-label.route-confirmed {
@@ -193,8 +196,13 @@ body {
 #header-route.route-hardware-delay .route-preview {
   visibility: hidden;
 }
+#run-number-display {
+  font-size: 1.228em;
+}
 .route-preview {
   margin-left: 0;
+  /* 1.05em of body, matching .header-row-2 (header 0.95em x header-route 0.9em) */
+  font-size: 1.228em;
 }
 .special-message-display {
   color: #fff;
@@ -214,8 +222,8 @@ body {
 .header-row-2 {
   background: #808080;
   color: #fff;
-  padding: 5px 15px;
-  font-size: 0.9em;
+  padding: 5px 15px 5px 0;
+  font-size: 1.05em;
   display: flex;
   width: 100%;
   box-sizing: border-box;
@@ -470,7 +478,7 @@ body:has(#pei-panel:not(.hide)) .main-panel {
   justify-content: space-between;
   align-items: center;
   color: #fff;
-  font-size: 1.2em;
+  font-size: 1.35em;
   line-height: 1.2;
   height: 40px;
   box-sizing: border-box;
@@ -644,7 +652,7 @@ body:has(#pei-panel:not(.hide)) .main-panel {
   border-right: 2px solid var(--separator-dark);
   padding: 10px 16px;
   font-family: inherit;
-  font-size: 1.1em;
+  font-size: 1em;
   line-height: 1.2;
   border-radius: 0;
   cursor: pointer;
@@ -979,9 +987,9 @@ button:active {
   margin: 0.5px 0px;
   border-bottom: 2px solid var(--separator-dark);
   font-size: 0.95em;
-  height: 28px;
-  min-height: 28px;
-  max-height: 28px;
+  height: 33px;
+  min-height: 33px;
+  max-height: 33px;
   display: flex;
   align-items: center;
   overflow: hidden;
@@ -1018,10 +1026,10 @@ body:has(#cctv-panel:not(.hide)) #cctv-select-footer {
 
 .footer-top-gap {
   background: #808080;
-  height: 24px;
-  min-height: 24px;
+  height: 34px;
+  min-height: 34px;
   border-top: 1px solid var(--separator-dark);
-  border-bottom: 1px solid var(--separator-dark);
+  border-bottom: 2px solid var(--separator-dark);
   box-sizing: border-box;
 }
 
@@ -2037,7 +2045,7 @@ body:has(#cctv-panel:not(.hide)) #cctv-select-footer {
 .special-item {
   color: #fff;
   padding: 7px 0;
-  font-size: 1.2em;
+  font-size: 1.35em;
   line-height: 1.2;
   cursor: pointer;
   display: none;
@@ -2233,7 +2241,7 @@ button.active-press {
 }
 button.side-btn:disabled {
   background: #808080 !important;
-  color: #d0d0d0 !important;
+  color: #fff !important;
   cursor: not-allowed;
 }
 
@@ -2562,7 +2570,7 @@ button:focus-visible,
   border-bottom: 1px solid #333;
   cursor: pointer;
   color: #fff;
-  font-size: 1.2em;
+  font-size: 1.35em;
   line-height: 1.2;
   height: 40px;
   box-sizing: border-box;
@@ -2857,4 +2865,23 @@ button.active-press,
 }
 .service-selection-close:active {
   background: #333 !important;
+}
+
+#startup-footer #back-btn:active,
+#startup-footer #back-btn.active-press {
+  background: #ff0000 !important;
+  color: #fff !important;
+}
+
+
+/* Enter is grey while the entered route is not known */
+body:has(#run-number-display.route-unknown) #startup-footer #enter-btn.footer-btn-green:not(:active):not(.active-press) {
+  background: #808080 !important;
+}
+
+/* Keep text white on greyed-out (disabled) CCTV buttons */
+#cctv-footer button:disabled,
+#cctv-select-footer button:disabled,
+#cctv-panel button.side-btn:disabled {
+  color: #fff !important;
 }
